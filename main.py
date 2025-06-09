@@ -209,17 +209,30 @@ def IA_Decision(board):
 
     # Parcourt les colonnes valides pour trouver le meilleur coup
     for col in get_valid_locations(board):
-        row = get_next_open_row(board, col)
-        drop_piece(board, row, col, 1)  # L'IA est le joueur 1
-        score = minimax(board, depth-1, -math.inf, math.inf, False)[1]
-        board[row][col] = 0  # Annule le coup
+        if is_valid_location(board, col):  # <-- Vérifie bien que la colonne est jouable
+            row = get_next_open_row(board, col)
+            drop_piece(board, row, col, AI_PIECE)  # Utilise la bonne pièce
+            score = minimax(board, depth-1, -math.inf, math.inf, False)[1]
+            board[row][col] = 0  # Annule le coup
 
-        # Met à jour le meilleur coup
-        if score > best_score:
-            best_score = score
-            best_col = col
+            if score > best_score:
+                best_score = score
+                best_col = col
 
     return best_col
+
+def Terminal_Test(board):
+    """
+    Vérifie si le jeu est terminé.
+    Retourne True si le jeu est fini (victoire ou match nul), sinon False.
+    """
+    if winning_move(board, PLAYER_PIECE) or winning_move(board, AI_PIECE):
+        return True
+
+    if len(get_valid_locations(board)) == 0:
+        return True
+
+    return False
 
 # Création du plateau de jeu
 board = create_board()
@@ -258,91 +271,66 @@ while not game_over:
             while True:  # Boucle pour gérer les entrées invalides
                 try:
                     col = int(input("Joueur 1, choisissez une colonne (0-11) : "))
-                    if col < 0 or col >= COLUMN_COUNT:  # Vérifie si le chiffre est dans les limites
+                    if col < 0 or col >= COLUMN_COUNT:
                         print("Veuillez entrer un chiffre entre 0 et 11.")
                         continue
-                    break  # Sort de la boucle si l'entrée est valide
+                    if not is_valid_location(board, col):
+                        print("Colonne pleine, choisissez-en une autre.")
+                        continue
+                    break
                 except ValueError:
                     print("Entrée invalide. Veuillez entrer un chiffre entre 0 et 11.")
 
             print("\n")
-            if is_valid_location(board, col):
-                row = get_next_open_row(board, col)
-                drop_piece(board, row, col, PLAYER_PIECE)
-                player_pieces_used += 1
-
-                if winning_move(board, PLAYER_PIECE):
-                    print("Vous avez gagné, félicitations !")
-                    game_over = True
-                    print_board(board)
-                    break
+            row = get_next_open_row(board, col)
+            drop_piece(board, row, col, PLAYER_PIECE)
+            player_pieces_used += 1
 
             print_board(board)
             print("\n")
+
+            if winning_move(board, PLAYER_PIECE):
+                print("Vous avez gagné, félicitations !")
+                game_over = True
+                break
+
+            if Terminal_Test(board):
+                print("Match nul !")
+                game_over = True
+                break
         else:
             print("Joueur 1 n'a plus de pièces disponibles !")
-        turn += 1
-        turn = turn % 2
+        turn = AI
 
     # Tour de l'IA
-    if turn == AI and not game_over:
+    elif turn == AI and not game_over:
         if ai_pieces_used < MAX_PIECES:
             print("L'IA joue son tour...\n")
-            
-            # Mesure du temps de calcul
             start_time = time.time()
-            
-            # Ajuste la profondeur en fonction des colonnes disponibles
-            depth = 6 if len(get_valid_locations(board)) > 10 else 8
-            best_col = None
-            best_score = -math.inf
-            
-            for col in get_valid_locations(board):
-                row = get_next_open_row(board, col)
-                drop_piece(board, row, col, AI_PIECE)
-                score = minimax(board, depth-1, -math.inf, math.inf, False)[1]
-                board[row][col] = 0  # Annule le coup
-                
-                # Met à jour le meilleur coup
-                if score > best_score:
-                    best_score = score
-                    best_col = col
-
-                # Vérifie le temps écoulé
-                elapsed_time = time.time() - start_time
-                if elapsed_time > 9:
-                    print(f"Temps limite dépassé ! L'IA joue le meilleur coup trouvé.")
-                    break
-
-                # Vérifie le temps écoulé
-                elapsed_time = time.time() - start_time
-                if elapsed_time > 9:
-                    print(f"Temps limite dépassé ! L'IA joue le meilleur coup trouvé.")
-                    break
-            
-            # Mesure du temps final
+            col = IA_Decision(board)
             end_time = time.time()
             elapsed_time = end_time - start_time
-            
-            # Joue le meilleur coup trouvé
-            col = best_col
+
             if is_valid_location(board, col):
                 row = get_next_open_row(board, col)
                 drop_piece(board, row, col, AI_PIECE)
                 ai_pieces_used += 1
 
-                if winning_move(board, AI_PIECE):
-                    game_over = True
-                    print_board(board)
-                    print("\n")
-                    print("L'IA a gagné, meilleure chance la prochaine fois !")
-                    break
-
-                # Affiche la colonne jouée par l'IA et le temps écoulé
                 print(f"L'IA a joué dans la colonne {col}. Temps écoulé : {elapsed_time:.2f} secondes.")
                 print_board(board)
                 print("\n")
+
+                if winning_move(board, AI_PIECE):
+                    print("L'IA a gagné, meilleure chance la prochaine fois !")
+                    game_over = True
+                    break
+
+                if Terminal_Test(board):
+                    print("Match nul !")
+                    game_over = True
+                    break
+            else:
+                print("L'IA n'a plus de coups valides !")
         else:
             print("L'IA n'a plus de pièces disponibles !")
-        turn += 1
-        turn = turn % 2
+        turn = PLAYER
