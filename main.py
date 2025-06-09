@@ -226,10 +226,20 @@ board = create_board()
 
 # Initialisation des variables de jeu
 game_over = False
-turn = random.randint(PLAYER, AI)
-
 player_pieces_used = 0
 ai_pieces_used = 0
+
+# Demande au joueur de choisir qui commence
+while True:
+    try:
+        choice = int(input("Qui commence ? (0 pour Joueur, 1 pour IA) : "))
+        if choice not in [0, 1]:
+            print("Veuillez entrer 0 pour Joueur ou 1 pour IA.")
+            continue
+        turn = choice
+        break
+    except ValueError:
+        print("Entrée invalide. Veuillez entrer 0 ou 1.")
 
 # Affichage du plateau initial
 print_board(board)
@@ -247,7 +257,7 @@ while not game_over:
         if player_pieces_used < MAX_PIECES:
             while True:  # Boucle pour gérer les entrées invalides
                 try:
-                    col = int(input("Joueur 1, choisissez une colonne (0-11) :"))
+                    col = int(input("Joueur 1, choisissez une colonne (0-11) : "))
                     if col < 0 or col >= COLUMN_COUNT:  # Vérifie si le chiffre est dans les limites
                         print("Veuillez entrer un chiffre entre 0 et 11.")
                         continue
@@ -277,8 +287,7 @@ while not game_over:
     # Tour de l'IA
     if turn == AI and not game_over:
         if ai_pieces_used < MAX_PIECES:
-            input("Appuyez sur Entrée pour que l'IA joue : ")
-            print("\n")
+            print("L'IA joue son tour...\n")
             
             # Mesure du temps de calcul
             start_time = time.time()
@@ -298,7 +307,13 @@ while not game_over:
                 if score > best_score:
                     best_score = score
                     best_col = col
-                
+
+                # Vérifie le temps écoulé
+                elapsed_time = time.time() - start_time
+                if elapsed_time > 9:
+                    print(f"Temps limite dépassé ! L'IA joue le meilleur coup trouvé.")
+                    break
+
                 # Vérifie le temps écoulé
                 elapsed_time = time.time() - start_time
                 if elapsed_time > 9:
