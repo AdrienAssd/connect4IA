@@ -1,0 +1,333 @@
+import math
+import random
+import time
+
+ROW_COUNT = 6
+COLUMN_COUNT = 12
+
+PLAYER = 0
+AI = 1
+
+PLAYER_PIECE = ' X'
+AI_PIECE = ' O'
+
+MAX_PIECES = 21
+
+def create_board():
+    board = [[0 for _ in range(COLUMN_COUNT)] for _ in range(ROW_COUNT)]
+    return board
+
+# Fonction pour placer une pièce dans une colonne donnée
+def drop_piece(board, row, col, piece):
+    board[row][col] = piece
+
+# Fonction pour vérifier si une colonne est valide pour placer une pièce
+def is_valid_location(board, col):
+    return board[ROW_COUNT-1][col] == 0
+
+# Fonction pour trouver la prochaine ligne ouverte dans une colonne donnée
+def get_next_open_row(board, col):
+    for r in range(ROW_COUNT):
+        if board[r][col] == 0:
+            return r
+
+# Fonction pour afficher le plateau de jeu avec une orientation inversée
+def print_board(board):
+    flipped_board = board[::-1]  # Inversion des lignes pour l'affichage
+    rows, cols = len(flipped_board), len(flipped_board[0])
+
+    for i in range(rows):
+        print("|", end="")
+        for j in range(cols):
+            cell = ' ' if flipped_board[i][j] == 0 else flipped_board[i][j]
+            print(f"{cell:2}", end=" |")
+        print()
+
+    print("-" * (cols * 4))
+
+    print("|", end=" ")
+    for j in range(cols):
+        print(f"{j}", end=" | ")
+
+# Fonction pour vérifier si un joueur a une combinaison gagnante
+def winning_move(board, piece):
+    # Vérification des alignements horizontaux
+    for c in range(COLUMN_COUNT-3):
+        for r in range(ROW_COUNT):
+            if board[r][c] == piece and board[r][c+1] == piece and board[r][c+2] == piece and board[r][c+3] == piece:
+                return True
+    # Vérification des alignements verticaux
+    for c in range(COLUMN_COUNT):
+        for r in range(ROW_COUNT-3):
+            if board[r][c] == piece and board[r+1][c] == piece and board[r+2][c] == piece and board[r+3][c] == piece:
+                return True
+
+    # Vérification des diagonales positives
+    for c in range(COLUMN_COUNT-3):
+        for r in range(ROW_COUNT-3):
+            if board[r][c] == piece and board[r+1][c+1] == piece and board[r+2][c+2] == piece and board[r+3][c+3] == piece:
+                return True
+    # Vérification des diagonales négatives
+    for c in range(COLUMN_COUNT-3):
+        for r in range(3, ROW_COUNT):
+            if board[r][c] == piece and board[r-1][c+1] == piece and board[r-2][c+2] == piece and board[r-3][c+3] == piece:
+                return True
+
+# Fonction pour obtenir une liste des colonnes valides pour placer une pièce
+def get_valid_locations(board):
+    valid_locations = []
+    for col in range(COLUMN_COUNT):
+        if is_valid_location(board, col):
+            valid_locations.append(col)
+    # Priorise la colonne centrale et les colonnes adjacentes
+    valid_locations.sort(key=lambda x: abs(COLUMN_COUNT // 2 - x))
+    return valid_locations
+
+# Fonction pour évaluer la position du plateau pour un joueur donné
+def score_position(board, piece):
+    score = 0
+    opponent_piece = PLAYER_PIECE if piece == AI_PIECE else AI_PIECE
+
+    # Score pour la colonne centrale
+    center_array = [board[r][COLUMN_COUNT // 2] for r in range(ROW_COUNT)]
+    score += center_array.count(piece) * 3
+
+    # Score pour les alignements horizontaux
+    for r in range(ROW_COUNT):
+        row_array = board[r]
+        for c in range(COLUMN_COUNT - 3):
+            window = row_array[c:c+4]
+            score += evaluate_window(window, piece)
+
+    # Score pour les alignements verticaux
+    for c in range(COLUMN_COUNT):
+        col_array = [board[r][c] for r in range(ROW_COUNT)]
+        for r in range(ROW_COUNT - 3):
+            window = col_array[r:r+4]
+            score += evaluate_window(window, piece)
+
+    # Score pour les diagonales positives
+    for r in range(ROW_COUNT - 3):
+        for c in range(COLUMN_COUNT - 3):
+            window = [board[r+i][c+i] for i in range(4)]
+            score += evaluate_window(window, piece)
+
+    # Score pour les diagonales négatives
+    for r in range(ROW_COUNT - 3):
+        for c in range(COLUMN_COUNT - 3):
+            window = [board[r+3-i][c+i] for i in range(4)]
+            score += evaluate_window(window, piece)
+
+    return score
+
+def evaluate_window(window, piece):
+    score = 0
+    opponent_piece = PLAYER_PIECE if piece == AI_PIECE else AI_PIECE
+
+    if window.count(piece) == 4:
+        score += 100
+    elif window.count(piece) == 3 and window.count(0) == 1:
+        score += 5
+    elif window.count(piece) == 2 and window.count(0) == 2:
+        score += 2
+
+    if window.count(opponent_piece) == 3 and window.count(0) == 1:
+        score -= 4
+
+    return score
+
+# Fonction pour vérifier si le plateau est dans un état terminal (fin de jeu)
+def is_terminal_node(board):
+    return winning_move(board, PLAYER_PIECE) or winning_move(board, AI_PIECE) or (len(get_valid_locations(board)) == 0)
+
+# Algorithme Minimax avec élagage Alpha-Beta pour trouver le meilleur coup
+def minimax(board, depth, alpha, beta, maximizingPlayer):
+    valid_locations = get_valid_locations(board)
+    is_terminal = is_terminal_node(board)
+
+    # Cas de base : profondeur 0 ou état terminal
+    if depth == 0 or is_terminal:
+        if is_terminal:
+            if winning_move(board, AI_PIECE):
+                return (None, math.inf)
+            elif winning_move(board, PLAYER_PIECE):
+                return (None, -math.inf)
+            else:  # Match nul
+                return (None, 0)
+        else:  # Profondeur 0
+            return (None, score_position(board, AI_PIECE))
+
+    # Maximisation pour l'IA
+    if maximizingPlayer:
+        value = -math.inf
+        column = random.choice(valid_locations)
+        for col in valid_locations:
+            row = get_next_open_row(board, col)
+            b_copy = [row[:] for row in board]  # Copie profonde du plateau
+            drop_piece(b_copy, row, col, AI_PIECE)
+            new_score = minimax(b_copy, depth-1, alpha, beta, False)[1]
+            board[row][col] = 0  # Annule le coup
+
+            if new_score > value:
+                value = new_score
+                column = col
+            alpha = max(alpha, value)
+
+            if alpha >= beta:
+                break
+        return column, value
+
+    # Minimisation pour le joueur
+    else:
+        value = math.inf
+        column = random.choice(valid_locations)
+        for col in valid_locations:
+            row = get_next_open_row(board, col)
+            b_copy = [row[:] for row in board]  # Copie profonde du plateau
+            drop_piece(b_copy, row, col, PLAYER_PIECE)
+            new_score = minimax(b_copy, depth-1, alpha, beta, True)[1]
+            board[row][col] = 0  # Annule le coup
+
+            if new_score < value:
+                value = new_score
+                column = col
+            beta = min(beta, value)
+
+            if alpha >= beta:
+                break
+        return column, value
+
+def IA_Decision(board):
+    """
+    Fonction qui décide de l'action à jouer pour l'IA.
+    Prend en paramètre une matrice de 6 lignes * 12 colonnes.
+    Retourne le numéro de colonne à jouer.
+    """
+    depth = 6  # Profondeur de recherche pour l'algorithme Minimax
+    best_col = None
+    best_score = -math.inf
+
+    # Parcourt les colonnes valides pour trouver le meilleur coup
+    for col in get_valid_locations(board):
+        row = get_next_open_row(board, col)
+        drop_piece(board, row, col, 1)  # L'IA est le joueur 1
+        score = minimax(board, depth-1, -math.inf, math.inf, False)[1]
+        board[row][col] = 0  # Annule le coup
+
+        # Met à jour le meilleur coup
+        if score > best_score:
+            best_score = score
+            best_col = col
+
+    return best_col
+
+# Création du plateau de jeu
+board = create_board()
+
+# Initialisation des variables de jeu
+game_over = False
+turn = random.randint(PLAYER, AI)
+
+player_pieces_used = 0
+ai_pieces_used = 0
+
+# Affichage du plateau initial
+print_board(board)
+print("\n")
+
+# Boucle principale du jeu
+while not game_over:
+    # Vérifie si les deux joueurs ont utilisé toutes leurs pièces
+    if player_pieces_used >= MAX_PIECES and ai_pieces_used >= MAX_PIECES:
+        print("Les deux joueurs ont utilisé toutes leurs pièces. Match nul !")
+        break
+
+    # Tour du joueur
+    if turn == PLAYER:
+        if player_pieces_used < MAX_PIECES:
+            while True:  # Boucle pour gérer les entrées invalides
+                try:
+                    col = int(input("Joueur 1, choisissez une colonne (0-11) :"))
+                    if col < 0 or col >= COLUMN_COUNT:  # Vérifie si le chiffre est dans les limites
+                        print("Veuillez entrer un chiffre entre 0 et 11.")
+                        continue
+                    break  # Sort de la boucle si l'entrée est valide
+                except ValueError:
+                    print("Entrée invalide. Veuillez entrer un chiffre entre 0 et 11.")
+
+            print("\n")
+            if is_valid_location(board, col):
+                row = get_next_open_row(board, col)
+                drop_piece(board, row, col, PLAYER_PIECE)
+                player_pieces_used += 1
+
+                if winning_move(board, PLAYER_PIECE):
+                    print("Vous avez gagné, félicitations !")
+                    game_over = True
+                    print_board(board)
+                    break
+
+            print_board(board)
+            print("\n")
+        else:
+            print("Joueur 1 n'a plus de pièces disponibles !")
+        turn += 1
+        turn = turn % 2
+
+    # Tour de l'IA
+    if turn == AI and not game_over:
+        if ai_pieces_used < MAX_PIECES:
+            input("Appuyez sur Entrée pour que l'IA joue : ")
+            print("\n")
+            
+            # Mesure du temps de calcul
+            start_time = time.time()
+            
+            # Ajuste la profondeur en fonction des colonnes disponibles
+            depth = 6 if len(get_valid_locations(board)) > 10 else 8
+            best_col = None
+            best_score = -math.inf
+            
+            for col in get_valid_locations(board):
+                row = get_next_open_row(board, col)
+                drop_piece(board, row, col, AI_PIECE)
+                score = minimax(board, depth-1, -math.inf, math.inf, False)[1]
+                board[row][col] = 0  # Annule le coup
+                
+                # Met à jour le meilleur coup
+                if score > best_score:
+                    best_score = score
+                    best_col = col
+                
+                # Vérifie le temps écoulé
+                elapsed_time = time.time() - start_time
+                if elapsed_time > 9:
+                    print(f"Temps limite dépassé ! L'IA joue le meilleur coup trouvé.")
+                    break
+            
+            # Mesure du temps final
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            
+            # Joue le meilleur coup trouvé
+            col = best_col
+            if is_valid_location(board, col):
+                row = get_next_open_row(board, col)
+                drop_piece(board, row, col, AI_PIECE)
+                ai_pieces_used += 1
+
+                if winning_move(board, AI_PIECE):
+                    game_over = True
+                    print_board(board)
+                    print("\n")
+                    print("L'IA a gagné, meilleure chance la prochaine fois !")
+                    break
+
+                # Affiche la colonne jouée par l'IA et le temps écoulé
+                print(f"L'IA a joué dans la colonne {col}. Temps écoulé : {elapsed_time:.2f} secondes.")
+                print_board(board)
+                print("\n")
+        else:
+            print("L'IA n'a plus de pièces disponibles !")
+        turn += 1
+        turn = turn % 2
