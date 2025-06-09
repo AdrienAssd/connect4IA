@@ -201,7 +201,7 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
 
 def IA_Decision(board):
     """
-    Fonction qui décide de l'actions à jouer pour l'IA.
+    Fonction qui décide de l'action à jouer pour l'IA.
     Prend en paramètre une matrice de 6 lignes * 12 colonnes.
     Retourne le numéro de colonne à jouer.
     """
@@ -209,11 +209,31 @@ def IA_Decision(board):
     best_col = None
     best_score = -math.inf
 
-    # Parcourt les colonnes valides pour trouver le meilleur coup
-    for col in get_valid_locations(board):
-        if is_valid_location(board, col):  # <-- Vérifie bien que la colonne est jouable
+    valid_cols = get_valid_locations(board)
+
+    # 1. Vérifie si l'IA peut gagner au prochain coup
+    for col in valid_cols:
+        row = get_next_open_row(board, col)
+        drop_piece(board, row, col, AI_PIECE)
+        if winning_move(board, AI_PIECE):
+            board[row][col] = 0
+            return col
+        board[row][col] = 0
+
+    # 2. Vérifie si le joueur peut gagner au prochain coup, et bloque-le
+    for col in valid_cols:
+        row = get_next_open_row(board, col)
+        drop_piece(board, row, col, PLAYER_PIECE)
+        if winning_move(board, PLAYER_PIECE):
+            board[row][col] = 0
+            return col
+        board[row][col] = 0
+
+    # 3. Sinon, joue le meilleur coup selon Minimax
+    for col in valid_cols:
+        if is_valid_location(board, col):
             row = get_next_open_row(board, col)
-            drop_piece(board, row, col, AI_PIECE)  # Utilise la bonne pièce
+            drop_piece(board, row, col, AI_PIECE)
             score = minimax(board, depth-1, -math.inf, math.inf, False)[1]
             board[row][col] = 0  # Annule le coup
 
@@ -445,3 +465,4 @@ else:
             else:
                 print("L'IA n'a plus de pièces disponibles !")
             turn = PLAYER
+            
