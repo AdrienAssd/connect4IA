@@ -30,6 +30,7 @@ def get_next_open_row(board, col):
     for r in range(ROW_COUNT):
         if board[r][col] == 0:
             return r
+    return None  # <-- Ajoute ceci
 
 # Fonction pour afficher le plateau de jeu avec une orientation inversée
 def print_board(board):
@@ -72,6 +73,7 @@ def winning_move(board, piece):
         for r in range(3, ROW_COUNT):
             if board[r][c] == piece and board[r-1][c+1] == piece and board[r-2][c+2] == piece and board[r-3][c+3] == piece:
                 return True
+    return False
 
 # Fonction pour obtenir une liste des colonnes valides pour placer une pièce
 def get_valid_locations(board):
@@ -167,7 +169,6 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
             b_copy = [row[:] for row in board]  # Copie profonde du plateau
             drop_piece(b_copy, row, col, AI_PIECE)
             new_score = minimax(b_copy, depth-1, alpha, beta, False)[1]
-            board[row][col] = 0  # Annule le coup
 
             if new_score > value:
                 value = new_score
@@ -188,7 +189,6 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
             b_copy = [row[:] for row in board]  # Copie profonde du plateau
             drop_piece(b_copy, row, col, PLAYER_PIECE)
             new_score = minimax(b_copy, depth-1, alpha, beta, True)[1]
-            board[row][col] = 0  # Annule le coup
 
             if new_score < value:
                 value = new_score
@@ -426,47 +426,9 @@ else:
             if ai_pieces_used < MAX_PIECES:
                 print("L'IA joue son tour...\n")
                 start_time = time.time()
-                best_col = None
-                best_score = -math.inf
-
-                # Profondeur adaptative
-                nb_coups = len(get_valid_locations(board))
-                if nb_coups > 10:
-                    depth = 5
-                elif nb_coups > 7:
-                    depth = 6
-                elif nb_coups > 4:
-                    depth = 7
-                else:
-                    depth = 8
-
-                valid_cols = get_valid_locations(board)
-                for col in valid_cols:
-                    if time.time() - start_time > 10:
-                        print("Temps limite dépassé ! L'IA joue le meilleur coup trouvé.")
-                        break
-                    if is_valid_location(board, col):
-                        row = get_next_open_row(board, col)
-                        drop_piece(board, row, col, AI_PIECE)
-                        score = minimax(board, depth-1, -math.inf, math.inf, False)[1]
-                        board[row][col] = 0  # Annule le coup
-
-                        if score > best_score:
-                            best_score = score
-                            best_col = col
-
+                col = IA_Decision(board)
                 end_time = time.time()
                 elapsed_time = end_time - start_time
-
-                # Si aucun coup n'a été trouvé (best_col == None), on choisit une colonne valide au hasard
-                if best_col is None:
-                    valid_cols = get_valid_locations(board)
-                    if valid_cols:
-                        col = random.choice(valid_cols)
-                    else:
-                        col = None
-                else:
-                    col = best_col
 
                 if col is not None and is_valid_location(board, col):
                     row = get_next_open_row(board, col)
