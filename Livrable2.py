@@ -79,9 +79,14 @@ def IA_Decision(board):
 def Terminal_Test(board):
     """
     Vérifie si le jeu est terminé.
-    Retourne True si le jeu est fini (victoire ou match nul), sinon False.
+    Retourne True si le jeu est fini (victoire, match nul ou plateau plein), sinon False.
     """
     if winning_move(board, PLAYER_PIECE) or winning_move(board, AI_PIECE):
+        return True
+
+    # Vérifie si toutes les cases du plateau sont remplies (42 pions utilisés)
+    total_pieces = sum(row.count(PLAYER_PIECE) + row.count(AI_PIECE) for row in board)
+    if total_pieces >= ROW_COUNT * COLUMN_COUNT:  # 6 * 12 = 42
         return True
 
     if len(get_valid_locations(board)) == 0:
