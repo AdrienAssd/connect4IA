@@ -242,7 +242,7 @@ def IA_Decision(board):
 
     # 3. Sinon, joue le meilleur coup selon Minimax
     for col in valid_cols:
-        if time.time() - start_time > 10:  # Temps limite dépassé
+        if time.time() - start_time >= 9.5:  # Temps limite dépassé
             print("Temps limite dépassé ! L'IA joue le meilleur coup trouvé.")
             break
 
@@ -298,12 +298,17 @@ def IA_vs_IA():
 
         if turn == 0 and ai1_pieces_used < MAX_PIECES:
             print("IA 1 (X) joue...")
+            start_time = time.time()
             col = IA_Decision(board)
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+
             if is_valid_location(board, col):
                 row = get_next_open_row(board, col)
                 drop_piece(board, row, col, PLAYER_PIECE)
                 ai1_pieces_used += 1
 
+                print(f"IA 1 a joué dans la colonne {col}. Temps écoulé : {elapsed_time:.2f} secondes.")
                 print_board(board)
                 print("\n")
 
@@ -314,12 +319,17 @@ def IA_vs_IA():
 
         elif turn == 1 and ai2_pieces_used < MAX_PIECES:
             print("IA 2 (O) joue...")
+            start_time = time.time()
             col = IA_Decision(board)
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+
             if is_valid_location(board, col):
                 row = get_next_open_row(board, col)
                 drop_piece(board, row, col, AI_PIECE)
                 ai2_pieces_used += 1
 
+                print(f"IA 2 a joué dans la colonne {col}. Temps écoulé : {elapsed_time:.2f} secondes.")
                 print_board(board)
                 print("\n")
 
