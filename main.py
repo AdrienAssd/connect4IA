@@ -228,7 +228,7 @@ def IA_Decision(board):
         drop_piece(board, row, col, AI_PIECE)
         if winning_move(board, AI_PIECE):
             board[row][col] = 0
-            return col
+            return col  # Priorité à la victoire
         board[row][col] = 0
 
     # 2. Vérifie si le joueur peut gagner au prochain coup, et bloque-le
@@ -237,7 +237,7 @@ def IA_Decision(board):
         drop_piece(board, row, col, PLAYER_PIECE)
         if winning_move(board, PLAYER_PIECE):
             board[row][col] = 0
-            return col
+            return col  # Priorité au blocage
         board[row][col] = 0
 
     # 3. Sinon, joue le meilleur coup selon Minimax
