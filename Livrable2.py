@@ -19,11 +19,22 @@ def IA_Decision(board):
     Prend en paramètre une matrice de 6 lignes * 12 colonnes.
     Retourne le numéro de colonne à jouer.
     """
-    depth = 5  # Profondeur de recherche pour l'algorithme Minimax
+    start_time = time.time()
     best_col = None
     best_score = -math.inf
 
     valid_cols = get_valid_locations(board)
+    nb_coups = len(valid_cols)
+
+    # Profondeur adaptative
+    if nb_coups > 10:
+        depth = 5
+    elif nb_coups > 7:
+        depth = 6
+    elif nb_coups > 4:
+        depth = 7
+    else:
+        depth = 8
 
     # 1. Vérifie si l'IA peut gagner au prochain coup
     for col in valid_cols:
@@ -45,6 +56,10 @@ def IA_Decision(board):
 
     # 3. Sinon, joue le meilleur coup selon Minimax
     for col in valid_cols:
+        if time.time() - start_time > 1:  # Temps limite dépassé
+            print("Temps limite dépassé ! L'IA joue le meilleur coup trouvé.")
+            break
+
         if is_valid_location(board, col):
             row = get_next_open_row(board, col)
             drop_piece(board, row, col, AI_PIECE)
@@ -54,6 +69,10 @@ def IA_Decision(board):
             if score > best_score:
                 best_score = score
                 best_col = col
+
+    # Si aucun coup n'a été trouvé (best_col == None), on choisit une colonne valide au hasard
+    if best_col is None:
+        best_col = random.choice(valid_cols)
 
     return best_col
 
