@@ -13,6 +13,7 @@ AI_PIECE = ' O'
 
 MAX_PIECES = 21
 
+
 def create_board():
     board = [[0 for _ in range(COLUMN_COUNT)] for _ in range(ROW_COUNT)]
     return board
@@ -129,12 +130,12 @@ def evaluate_window(window, piece):
     if window.count(piece) == 4:
         score += 100
     elif window.count(piece) == 3 and window.count(0) == 1:
-        score += 5
+        score += 20   # Augmente ce score !
     elif window.count(piece) == 2 and window.count(0) == 2:
         score += 2
 
     if window.count(opponent_piece) == 3 and window.count(0) == 1:
-        score -= 4
+        score -= 40   # Augmente la pénalité pour une menace adverse
 
     return score
 
@@ -202,63 +203,94 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
 def IA_Decision(board):
     """
     Fonction qui décide de l'action à jouer pour l'IA.
-    Prend en paramètre une matrice de 6 lignes * 12 colonnes.
-    Retourne le numéro de colonne à jouer.
+    Adapte dynamiquement la profondeur pour ne pas dépasser 10 secondes.
     """
     start_time = time.time()
     best_col = None
     best_score = -math.inf
-
     valid_cols = get_valid_locations(board)
-    nb_coups = len(valid_cols)
 
-    # Profondeur adaptative
-    if nb_coups > 10:
-        depth = 5
-    elif nb_coups > 7:
-        depth = 6
-    elif nb_coups > 4:
-        depth = 7
-    else:
-        depth = 8
-
-    # 1. Vérifie si l'IA peut gagner au prochain coup
+    # 1. Cherche la victoire immédiate
     for col in valid_cols:
         row = get_next_open_row(board, col)
         drop_piece(board, row, col, AI_PIECE)
         if winning_move(board, AI_PIECE):
             board[row][col] = 0
-            return col  # Priorité à la victoire
+            return col
         board[row][col] = 0
 
-    # 2. Vérifie si le joueur peut gagner au prochain coup, et bloque-le
+    # 2. Bloque la victoire immédiate adverse
     for col in valid_cols:
         row = get_next_open_row(board, col)
         drop_piece(board, row, col, PLAYER_PIECE)
         if winning_move(board, PLAYER_PIECE):
             board[row][col] = 0
-            return col  # Priorité au blocage
+            return col
         board[row][col] = 0
 
-    # 3. Sinon, joue le meilleur coup selon Minimax
+    # 2bis. Détection de double menace (piège à deux coups)
     for col in valid_cols:
-        if time.time() - start_time >= 9.5:  # Temps limite dépassé
-            print("Temps limite dépassé ! L'IA joue le meilleur coup trouvé.")
+        row = get_next_open_row(board, col)
+        drop_piece(board, row, col, PLAYER_PIECE)
+        opponent_wins = 0
+        for next_col in get_valid_locations(board):
+            next_row = get_next_open_row(board, next_col)
+            drop_piece(board, next_row, next_col, PLAYER_PIECE)
+            if winning_move(board, PLAYER_PIECE):
+                opponent_wins += 1
+            board[next_row][next_col] = 0
+        board[row][col] = 0
+        if opponent_wins >= 2:
+            return col
+
+    # 2ter. Cherche un coup qui crée une victoire forcée au prochain tour
+    for col in valid_cols:
+        row = get_next_open_row(board, col)
+        drop_piece(board, row, col, AI_PIECE)
+        win_next = True
+        for opp_col in get_valid_locations(board):
+            opp_row = get_next_open_row(board, opp_col)
+            drop_piece(board, opp_row, opp_col, PLAYER_PIECE)
+            ia_can_win = False
+            for next_col in get_valid_locations(board):
+                next_row = get_next_open_row(board, next_col)
+                drop_piece(board, next_row, next_col, AI_PIECE)
+                if winning_move(board, AI_PIECE):
+                    ia_can_win = True
+                board[next_row][next_col] = 0
+            board[opp_row][opp_col] = 0
+            if not ia_can_win:
+                win_next = False
+                break
+        board[row][col] = 0
+        if win_next:
+            return col
+
+    # 3. Recherche adaptative de la profondeur
+    max_time = 9.0
+    max_depth = 10
+    min_depth = 4
+    best_col = random.choice(valid_cols)
+    best_score = -math.inf
+
+    for depth in range(min_depth, max_depth + 1):
+        iter_start = time.time()
+        for col in valid_cols:
+            if time.time() - start_time > max_time:
+                print(f"Temps limite atteint à la profondeur {depth-1}.")
+                return best_col
+            if is_valid_location(board, col):
+                row = get_next_open_row(board, col)
+                drop_piece(board, row, col, AI_PIECE)
+                score = minimax(board, depth-1, -math.inf, math.inf, False)[1]
+                board[row][col] = 0
+                if score > best_score:
+                    best_score = score
+                    best_col = col
+        iter_end = time.time()
+        if iter_end - start_time > max_time:
+            print(f"Temps limite atteint à la profondeur {depth}.")
             break
-
-        if is_valid_location(board, col):
-            row = get_next_open_row(board, col)
-            drop_piece(board, row, col, AI_PIECE)
-            score = minimax(board, depth-1, -math.inf, math.inf, False)[1]
-            board[row][col] = 0  # Annule le coup
-
-            if score > best_score:
-                best_score = score
-                best_col = col
-
-    # Si aucun coup n'a été trouvé (best_col == None), on choisit une colonne valide au hasard
-    if best_col is None:
-        best_col = random.choice(valid_cols)
 
     return best_col
 
