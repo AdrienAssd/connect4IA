@@ -349,66 +349,67 @@ def IA_vs_IA():
 # IA_vs_IA()
 
 
-# Choix du mode de jeu
-while True:
-    try:
-        mode = int(input("Choisissez le mode : 1 pour Joueur vs IA, 2 pour IA vs IA : "))
-        if mode not in [1, 2]:
-            print("Veuillez entrer 1 ou 2.")
-            continue
-        break
-    except ValueError:
-        print("Entrée invalide. Veuillez entrer 1 ou 2.")
-
-if mode == 2:
-    IA_vs_IA()
-else:
-    # Création du plateau de jeu
-    board = create_board()
-
-    # Initialisation des variables de jeu
-    game_over = False
-    player_pieces_used = 0
-    ai_pieces_used = 0
-
-    # Demande au joueur de choisir qui commence
+def main():
+    # Choix du mode de jeu
     while True:
         try:
-            choice = int(input("Qui commence ? (0 pour Joueur, 1 pour IA) : "))
-            if choice not in [0, 1]:
-                print("Veuillez entrer 0 pour Joueur ou 1 pour IA.")
+            mode = int(input("Choisissez le mode : 1 pour Joueur vs IA, 2 pour IA vs IA : "))
+            if mode not in [1, 2]:
+                print("Veuillez entrer 1 ou 2.")
                 continue
-            turn = choice
             break
         except ValueError:
-            print("Entrée invalide. Veuillez entrer 0 ou 1.")
+            print("Entrée invalide. Veuillez entrer 1 ou 2.")
 
-    # Affichage du plateau initial
-    print_board(board)
-    print("\n")
+    if mode == 2:
+        IA_vs_IA()
+    else:
+        # Création du plateau de jeu
+        board = create_board()
 
-    # Boucle principale du jeu Joueur vs IA
-    while not game_over:
-        # Vérifie si les deux joueurs ont utilisé toutes leurs pièces
-        if player_pieces_used >= MAX_PIECES and ai_pieces_used >= MAX_PIECES:
-            print("Les deux joueurs ont utilisé toutes leurs pièces. Match nul !")
-            break
+        # Initialisation des variables de jeu
+        game_over = False
+        player_pieces_used = 0
+        ai_pieces_used = 0
 
-        # Tour du joueur
-        if turn == PLAYER:
-            if player_pieces_used < MAX_PIECES:
-                while True:  # Boucle pour gérer les entrées invalides
-                    try:
-                        col = int(input("Joueur 1, choisissez une colonne (0-11) : "))
-                        if col < 0 or col >= COLUMN_COUNT:
-                            print("Veuillez entrer un chiffre entre 0 et 11.")
-                            continue
-                        if not is_valid_location(board, col):
-                            print("Colonne pleine, choisissez-en une autre.")
-                            continue
-                        break
-                    except ValueError:
-                        print("Entrée invalide. Veuillez entrer un chiffre entre 0 et 11.")
+        # Demande au joueur de choisir qui commence
+        while True:
+            try:
+                choice = int(input("Qui commence ? (0 pour Joueur, 1 pour IA) : "))
+                if choice not in [0, 1]:
+                    print("Veuillez entrer 0 pour Joueur ou 1 pour IA.")
+                    continue
+                turn = choice
+                break
+            except ValueError:
+                print("Entrée invalide. Veuillez entrer 0 ou 1.")
+
+        # Affichage du plateau initial
+        print_board(board)
+        print("\n")
+
+        # Boucle principale du jeu Joueur vs IA
+        while not game_over:
+            # Vérifie si les deux joueurs ont utilisé toutes leurs pièces
+            if player_pieces_used >= MAX_PIECES and ai_pieces_used >= MAX_PIECES:
+                print("Les deux joueurs ont utilisé toutes leurs pièces. Match nul !")
+                break
+
+            # Tour du joueur
+            if turn == PLAYER:
+                if player_pieces_used < MAX_PIECES:
+                    while True:  # Boucle pour gérer les entrées invalides
+                        try:
+                            col = int(input("Joueur 1, choisissez une colonne (0-11) : "))
+                            if col < 0 or col >= COLUMN_COUNT:
+                                print("Veuillez entrer un chiffre entre 0 et 11.")
+                                continue
+                            if not is_valid_location(board, col):
+                                print("Colonne pleine, choisissez-en une autre.")
+                                continue
+                            break
+                        except ValueError:
+                            print("Entrée invalide. Veuillez entrer un chiffre entre 0 et 11.")
 
                 print("\n")
                 row = get_next_open_row(board, col)
@@ -431,33 +432,37 @@ else:
                 print("Joueur 1 n'a plus de pièces disponibles !")
             turn = AI
 
-        # Tour de l'IA
-        elif turn == AI and not game_over:
-            if ai_pieces_used < MAX_PIECES:
-                print("L'IA joue son tour...\n")
-                start_time = time.time()
-                col = IA_Decision(board)
-                end_time = time.time()
-                elapsed_time = end_time - start_time
+            # Tour de l'IA
+            if turn == AI:
+                if ai_pieces_used < MAX_PIECES:
+                    print("L'IA joue son tour...\n")
+                    start_time = time.time()
+                    col = IA_Decision(board)
+                    end_time = time.time()
+                    elapsed_time = end_time - start_time
 
-                if col is not None and is_valid_location(board, col):
-                    row = get_next_open_row(board, col)
-                    drop_piece(board, row, col, AI_PIECE)
-                    ai_pieces_used += 1
+                    if col is not None and is_valid_location(board, col):
+                        row = get_next_open_row(board, col)
+                        drop_piece(board, row, col, AI_PIECE)
+                        ai_pieces_used += 1
 
-                    print(f"L'IA a joué dans la colonne {col}. Temps écoulé : {elapsed_time:.2f} secondes.")
-                    print_board(board)
-                    print("\n")
+                        print(f"L'IA a joué dans la colonne {col}. Temps écoulé : {elapsed_time:.2f} secondes.")
+                        print_board(board)
+                        print("\n")
 
-                    if winning_move(board, AI_PIECE):
-                        print("L'IA a gagné, meilleure chance la prochaine fois !")
-                        game_over = True
-                        break
+                        if winning_move(board, AI_PIECE):
+                            print("L'IA a gagné, meilleure chance la prochaine fois !")
+                            game_over = True
+                            return
 
-                    if Terminal_Test(board):
-                        print("Match nul !")
-                        game_over = True
-                        break
-            else:
-                print("L'IA n'a plus de pièces disponibles !")
-            turn = PLAYER
+                        if Terminal_Test(board):
+                            print("Match nul !")
+                            game_over = True
+                            return
+                else:
+                    print("L'IA n'a plus de pièces disponibles !")
+                turn = PLAYER
+
+# Pour lancer le jeu :
+if __name__ == "__main__":
+    main()
