@@ -26,9 +26,9 @@ class Puissance4:
 
     def display(self):
         for row in self.board:
-            print("|" + "|".join(" " if cell == 0 else ("X" if cell == 1 else "O") for cell in row) + "|")
-        print("-" * (2 * COLS + 1))
-        print(" " + " ".join(str(i % 10) for i in range(COLS)))
+            print("| " + " | ".join(" " if cell == 0 else ("X" if cell == 1 else "O") for cell in row) + " |")
+        print("-" * (4 * COLS + 1))
+        print("  " + "   ".join(str(i) for i in range(COLS)))
 
 
 def check_winner(board):
